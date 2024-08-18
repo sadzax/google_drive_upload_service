@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-upload-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cloud-upload-service
+  template:
+    metadata:
+      labels:
+        app: cloud-upload-service
+    spec:
+      containers:
+      - name: cloud-upload-service
+        image: your-docker-registry/cloud-upload-service:latest
+        ports:
+        - containerPort: 8301
+        env:
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-secrets
+              key: client-id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-secrets
+              key: client-secret
+        - name: GOOGLE_REDIRECT_URI
+          value: "https://.com/oauth2callback" # TODO Узнать домент
