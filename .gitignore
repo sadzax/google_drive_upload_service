@@ -6,6 +6,11 @@
 # Venv
 __pycache__
 venv
+.env.example
+
+# Private Data
+private/
+
 
 # Node artifact files
 node_modules/
@@ -26,6 +31,7 @@ dist/
 # Maven
 target/
 dist/
+
 
 # JetBrains IDE
 .idea/

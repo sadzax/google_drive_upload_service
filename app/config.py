@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 
-load_dotenv() # для поиска .env
+load_dotenv()# для поиска .env
 
 
 class Settings:
