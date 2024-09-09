@@ -1,0 +1,17 @@
+# requirements.txt
+fastapi
+uvicorn
+sqlalchemy
+aiosqlite
+
+python-jose[cryptography]
+python-multipart
+requests
+
+pydantic
+
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+
+python-dotenv
