@@ -9,7 +9,6 @@ class Settings:
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
     GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-    SERVICE_ACCOUNT_FILE = 'private/lite-433020-a867021b84ea.json' # MOCK
     SCOPES = [os.getenv("GOOGLE_DRIVE_SCOPE")]
 
 

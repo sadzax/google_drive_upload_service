@@ -3,9 +3,8 @@ from fastapi.security import OAuth2PasswordBearer
 import requests
 from jose import jwt
 from config import settings, google_links
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from services.google_drive_service import GoogleDriveService
+from services.file_metadata_service import FileMetadataService
 
 app = FastAPI()
 
@@ -24,9 +23,13 @@ async def login_google():
 
 @app.get("/auth/google")
 async def auth_google(code: str):
+    """
+    :param code: код авторизации от пользователя после get("/login/google")
+    :return: хэш, для создания объекта класса Credentials
+    """
     token_url = google_links.USER_TOKEN_URL
     data = {
-        "code": code, # MOCK
+        "code": code,
         "client_id": settings.GOOGLE_CLIENT_ID,
         "client_secret": settings.GOOGLE_CLIENT_SECRET,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
@@ -35,47 +38,37 @@ async def auth_google(code: str):
     response = requests.post(token_url, data=data)
     # TODO Обработка исключений
 
-    creds = Credentials(
-        token=response.json()['access_token'],
-        refresh_token=response.json().get('refresh_token'),
-        token_uri='https://accounts.google.com/o/oauth2/token',
-        client_id='YOUR_CLIENT_ID',
-        client_secret='YOUR_CLIENT_SECRET',
-    )
+    return {
+        "token": response.json()['access_token'],
+        "refresh_token": response.json().get('refresh_token'),
+        "token_uri": google_links.USER_TOKEN_URL,
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "client_secret": settings.GOOGLE_CLIENT_SECRET
+    }
 
-    # return creds # TODO метод заканчивать выдачей токена, логику загрузки вынести в сервисы
-    # TODO разделить метод на 2 сервиса - request и получение кредов
-    # TODO автотесты?
 
-    # TODO Вытащить сервис в класс
-    # Здесь используется уже access_token пользователя (а не сервиса)
-    drive_service = build('drive', 'v3', credentials=creds) # TODO Вынести в отдельный сервис
+@app.post("/upload/google")
+async def upload_to_google_drive(creds_hash: dict, file_path: str, folder_id: str = None):
+    """
+    Создаем экземпляр GoogleDriveService,
+    :param creds_hash: хэш/словарь из get("/auth/google")
+    :param file_path: путь к файлу формата 'folder/file.ext'
+    :param folder_id: необязательный аргумент, ID директории в Google Drive, куда нужно поместить файл
+    :return: ID файла на Google Drive
+    """
+    drive_service = GoogleDriveService(creds_hash)
 
-    # services.folder_id_create_service # TODO допилить сервис запуска 2 операций: 1. создавалась директория - 2. перехватывать её ID
-    folder_id = '1lVeI-2cVeMaYMVeQnhiR6l53xCT8E168' # MOCK
+    if any(c in "/" for c in file_path):
+        file_name = file_path.split('/')[-1]
+    else:
+        file_name = file_path
+    # TODO добавить сервис для обработки директорий / вложенных директорий
+    file_metadata = FileMetadataService.get_file_metadata(file_name, folder_id)
+    file_mimetype = FileMetadataService.get_mime_type(file_name)
 
-    # services.file_path_create_service # TODO допилить сервис прохода по файлам для загрузки + MIME
-    file_metadata = {'name': 'testfile_DRIVE.txt', 'parents': [folder_id]} # MOCK
-    file_path = 'testfile.txt' # MOCK
-    file_mimetype = 'text/plain' # MOCK
+    file_id = drive_service.upload_file(file_path, file_metadata, file_mimetype)
 
-    file_metadata = {'name': 'testfile_DRIVE_JPG.jpg', 'parents': [folder_id]} # MOCK
-    file_path = 'testfile.jpg' # MOCK
-    file_mimetype = 'image/jpeg' # MOCK
-
-    file_metadata = {'name': 'testfile_DRIVE_HEIC.HEIC', 'parents': [folder_id]} # MOCK
-    file_path = 'testfile.HEIC' # MOCK
-    file_mimetype = 'image/heic' # MOCK
-
-    file_metadata = {'name': 'testfile_DRIVE_MP4.mp4', 'parents': [folder_id]} # MOCK
-    file_path = 'testfile.mp4' # MOCK
-    file_mimetype = 'video/mp4' # MOCK
-
-    media = MediaFileUpload(file_path, mimetype=file_mimetype) # TODO допилить сервис обработки медиа
-
-    # TODO обработка interruptions
-    file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    return {"file_id": file.get("id")}
+    return {"file_id": file_id}
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
