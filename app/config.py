@@ -9,16 +9,16 @@ class Settings:
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
     GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-    SERVICE_ACCOUNT_FILE = 'private/lite-433020-a867021b84ea.json'
-    SCOPES = ['https://www.googleapis.com/auth/drive.file']
+    SERVICE_ACCOUNT_FILE = 'private/lite-433020-a867021b84ea.json' # MOCK
+    SCOPES = [os.getenv("GOOGLE_DRIVE_SCOPE")]
 
 
 settings = Settings()
 
 
 class GoogleLinks:
-    USER_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token'
-    GRANT_TYPE = "authorization_code"
+    USER_TOKEN_URL = os.getenv("USER_TOKEN_URL")
+    GRANT_TYPE = os.getenv("GRANT_TYPE")
 
 
 google_links = GoogleLinks()
