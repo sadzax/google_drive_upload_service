@@ -1,5 +1,6 @@
 import mimetypes
 
+
 class FileMetadataService:
     @staticmethod
     def get_mime_type(file_name: str) -> str:
@@ -12,6 +13,7 @@ class FileMetadataService:
         mime_type = mimetypes.guess_type(file_name)
 
         return mime_type[0] or 'application/octet-stream'
+
 
     @staticmethod
     def get_file_metadata(file_name: str, folder_id: str = None) -> dict:

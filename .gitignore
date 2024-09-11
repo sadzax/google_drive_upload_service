@@ -10,7 +10,8 @@ venv
 # Private Data
 private/
 app/private
-archive/main_local.py
+app/main_local.py
+*google_drive_upload_service.log
 archive/
 app/testfile_OLEG.txt
 .env.example
