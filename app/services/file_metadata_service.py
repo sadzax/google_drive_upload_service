@@ -5,10 +5,10 @@ class FileMetadataService:
     @staticmethod
     def get_mime_type(file_name: str) -> str:
         """
+        Возвращает первый элемент кортежа mime_type (или 'application/octet-stream', если тип не найден)
         :param file_name: строка "имя файла" с расширением
         :return: строка, MIME-тип файла на основе его расширения
         Например, 'image/jpeg' для "*.jpg", 'video/quicktime' для "*.mov" и т.д.
-        Возвращает первый элемент кортежа mime_type (или 'application/octet-stream', если тип не найден)
         """
         mime_type = mimetypes.guess_type(file_name)
 

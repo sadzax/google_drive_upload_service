@@ -23,6 +23,14 @@ class GoogleLinks:
 google_links = GoogleLinks()
 
 
+class LiteGalleryEnvs:
+    SERVICE_NAME = os.getenv("SERVICE_NAME")
+    PROD_NETLOC = os.getenv("PROD_NETLOC")
+
+
+lite_gallery_links = LiteGalleryEnvs()
+
+
 class JavaScriptSettings:
     GOOGLE_PLATFORM_LIBRARY_SCRIPT = '<script src="https://apis.google.com/js/platform.js" async defer></script>'
 

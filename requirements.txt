@@ -1,17 +1,19 @@
 # requirements.txt
-fastapi
+fastapi~=0.114.0
 uvicorn
 sqlalchemy
 aiosqlite
 
-python-jose[cryptography]
+python-jose[cryptography]~=3.3.0
 python-multipart
-requests
+requests~=2.32.3
 
-pydantic
+pydantic~=2.9.1
 
 google-auth-oauthlib
 google-auth-httplib2
-google-api-python-client
+google-api-python-client~=2.144.0
 
-python-dotenv
+python-dotenv~=1.0.1
+
+protobuf~=5.28.0
