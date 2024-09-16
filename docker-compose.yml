@@ -4,23 +4,23 @@ services:
     build:
       context: .
     container_name: google_drive_upload_ms
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${APP_PORT} --reload
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "${APP_PORT}:${APP_PORT}"
     depends_on:
       - rabbitmq
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
 
   rabbitmq:
     image: "rabbitmq:3-management"
     container_name: rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
 
   worker:
     build:
@@ -31,4 +31,4 @@ services:
       - rabbitmq
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
