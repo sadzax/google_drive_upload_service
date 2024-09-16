@@ -17,3 +17,5 @@ google-api-python-client~=2.144.0
 python-dotenv~=1.0.1
 
 protobuf~=5.28.0
+
+pika

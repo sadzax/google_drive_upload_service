@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import requests
-from urllib.parse import urlparse
-from jose import jwt
+import pika
+import json
 from logging_config import logger
 from config import settings, google_links
 from services.google_drive_service import GoogleDriveService
@@ -14,7 +14,7 @@ from models.archive_request import SessionLocalArchiveRequest, ArchiveRequest
 app = FastAPI()
 
 
-@app.post("/cloud_archive")
+@app.get("/cloud_archive") # !!! MOCK MUST BE GET
 async def cloud_archive(request: Request):
     """
     Эндпоинт для получения параметров от фронта, перенаправления пользователя на Google OAuth2
@@ -30,18 +30,18 @@ async def cloud_archive(request: Request):
     :return: 307 редирект на систему авторизации Google
     """
     session = SessionLocalArchiveRequest()
-    body = await request.json()
-    # body = {
-    #     "redirect_success_link": "https://litegallery.io/oferta/",
-    #     "redirect_fail_link": "https://litegallery.io/policy/",
-    #     "archive_url": "https://arch-d.lite.gallery/g/api/stream/858329/f9d24b1dfb81a1bfa215cc008f46f3d3?mod=web",
-    #     "gallery_name": "Название галереи",
-    #     "archive_type": "webs",
-    #     "cloud_type": "google_drive"} # MOCK
+    # body = await request.json()
+    body = {
+        "redirect_success_link": "https://litegallery.io/oferta/",
+        "redirect_fail_link": "https://litegallery.io/policy/",
+        "archive_url": "https://arch-d.lite.gallery/g/api/stream/858329/f9d24b1dfb81a1bfa215cc008f46f3d3?mod=web",
+        "gallery_name": "Название галереи",
+        "archive_type": "webs",
+        "cloud_type": "google_drive"} # MOCK
 
-    # Проверяем корректность типа диска
+    # Проверяем корректность типа диска и вытаскиваем данные из запроса
     cloud_type = body.get("cloud_type")
-    if cloud_type != "google_drive": #TODO через ENV
+    if cloud_type != "google_drive":
         logger.error(f"Поступил запрос с некорректным параметром cloud_type")
         raise HTTPException(status_code=400, detail="Invalid cloud type")
 
@@ -85,7 +85,7 @@ async def cloud_archive(request: Request):
 async def google_auth_callback(code: str, state: str):
     """
     Получаем код авторизации и передаем его в auth_google.
-    Затем вызываем загрузку файлов и делаем редирект на success или fail ссылку.
+    Затем вызываем загрузку файлов через очередь и делаем редирект на success или fail ссылку.
     :param code: код авторизации от пользователя формата "4/0AQlEd8x___[FILTERED]___f6I3FbDWeYSbjKgxGh2fqG6Bv5lSjDSzVI-x2hAEh50Bs4Q"
     :param state: Id в формате uuid модели ArchiveRequest, передаётся в стейт из-за особенностей Google OAuth
     :return: 307 редирект, установленный первоначальным запросом с фронта (success либо failed)
@@ -102,12 +102,15 @@ async def google_auth_callback(code: str, state: str):
                 logger.error(f"Запись запроса с ID {state} не найдена")
                 raise HTTPException(status_code = 404, detail = "Запись не найдена")
 
-            # Вызываем загрузку файлов на Google Drive
-            target_url = archive_request.archive_url
+            # Устанавливаем параметры задачи RabbitMQ для фоновой обработки и запускаем таску в очередь
+            task = {
+                "creds_hash": creds_hash,
+                "target_url": archive_request.archive_url
+            }
 
-            await upload_to_google_drive(creds_hash = creds_hash, target_url = target_url)
+            send_to_rabbitmq("google_drive_upload", task)
 
-            # Если всё прошло успешно, перенаправляем на success_link
+            # Если задачи ушли, то для пользователя на этом этапе всё успешно, перенаправляем на success_link
             return RedirectResponse(url = archive_request.redirect_success_link)
         except Exception as e:
             logger.error(f"Ошибка при обработке OAuth Google: {e}")
@@ -156,30 +159,34 @@ async def auth_google(code: str):
         return # MOCK
 
 
-@app.post("/upload_to_google_drive")
-async def upload_to_google_drive(creds_hash: dict, target_url: str, folder_id: str = None):
+def send_to_rabbitmq(queue_name: str, message: dict):
     """
-    Создаем экземпляр GoogleDriveService,
-    :param creds_hash: хэш/словарь из get("/auth/google")
-    :param target_url: ссылка на альбом 'https://some_random.gallery/g/api/stream/858329/f9d24b1dfb81a1bfa215cc008f46f3d3?mod=nonweb'
-    :param folder_id: необязательный аргумент, ID директории в Google Drive, куда нужно поместить файл
-    :return: ID файла на Google Drive
+    Создание очереди в RabbitMQ
+    :param queue_name: Имя очереди, в нашем случае это "google_drive_upload"
+    :param message: Хэш/словарь с параметрами для выполнения задачи
+        {
+            "creds_hash": creds_hash, // хэш, для создания объекта класса Credentials
+            "target_url": archive_request.archive_url // ссылка альбома 'https://some_random.gallery/g/api/stream/858329/6f3d3?mod=nonweb'
+        }
+    :return: None
     """
-    drive_service = GoogleDriveService(creds_hash=creds_hash)
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение RabbitMQ на локальной машине
+    # connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # Подключение RabbitMQ через сеть Docker
+    channel = connection.channel()
 
-    if folder_id is None:
-        folder_id = drive_service.initial_folder_id
+    # Создаем очередь
+    channel.queue_declare(queue=queue_name, durable=True)
 
-    data = LiteGalleryStreamService(target_url).data
-#TODO переписать на фоновое выполнение в очереди RabbitMQ
-    for folder_name in data:
-        new_folder_id = drive_service.create_folder(folder_name=folder_name, parent_id=folder_id)
-        for record in data[folder_name]:
-            file_name = record['file_name']
-            file_path = record['url']
-            file_metadata = FileMetadataService.get_file_metadata(file_name=file_name, folder_id=new_folder_id)
-            file_mimetype = FileMetadataService.get_mime_type(file_name=file_name)
-            drive_service.upload_file(file_path=file_path, file_metadata=file_metadata, file_mimetype=file_mimetype)
+    # Отправляем сообщение в очередь
+    channel.basic_publish(
+        exchange='',
+        routing_key=queue_name,
+        body=json.dumps(message),
+        properties=pika.BasicProperties(
+            delivery_mode=2,  # Сделать сообщение устойчивым
+        ))
+
+    connection.close()
 
 
 # @app.post("/upload/google/single")
