@@ -11,7 +11,7 @@ from app.models.archive_request import SessionLocalArchiveRequest, ArchiveReques
 app = FastAPI()
 
 
-@app.get("/cloud_archive") # !!! MOCK MUST BE GET
+@app.post("/cloud_archive")
 async def cloud_archive(request: Request):
     """
     Эндпоинт для получения параметров от фронта, перенаправления пользователя на Google OAuth2
@@ -27,14 +27,7 @@ async def cloud_archive(request: Request):
     :return: 307 редирект на систему авторизации Google
     """
     session = SessionLocalArchiveRequest()
-    # body = await request.json()
-    body = {
-        "redirect_success_link": "https://litegallery.io/oferta/",
-        "redirect_fail_link": "https://litegallery.io/policy/",
-        "archive_url": "https://arch-d.lite.gallery/g/api/stream/858329/f9d24b1dfb81a1bfa215cc008f46f3d3?mod=web",
-        "gallery_name": "Название галереи",
-        "archive_type": "webs",
-        "cloud_type": "google_drive"} # MOCK
+    body = await request.json()
 
     # Проверяем корректность типа диска и вытаскиваем данные из запроса
     cloud_type = body.get("cloud_type")
@@ -179,7 +172,7 @@ def send_to_rabbitmq(queue_name: str, message: dict):
         routing_key=queue_name,
         body=json.dumps(message),
         properties=pika.BasicProperties(
-            delivery_mode=2,  # Сделать сообщение устойчивым
+            delivery_mode=2,
         ))
 
     connection.close()
