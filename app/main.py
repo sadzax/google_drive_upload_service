@@ -3,12 +3,9 @@ from fastapi.responses import RedirectResponse
 import requests
 import pika
 import json
-from logging_config import logger
-from config import settings, google_links
-from services.google_drive_service import GoogleDriveService
-from services.file_metadata_service import FileMetadataService
-from services.lite_gallery_stream_service import LiteGalleryStreamService
-from models.archive_request import SessionLocalArchiveRequest, ArchiveRequest
+from app.logging_config import logger
+from app.config import settings, google_links
+from app.models.archive_request import SessionLocalArchiveRequest, ArchiveRequest
 
 
 app = FastAPI()
@@ -170,8 +167,7 @@ def send_to_rabbitmq(queue_name: str, message: dict):
         }
     :return: None
     """
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение RabbitMQ на локальной машине
-    # connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # Подключение RabbitMQ через сеть Docker
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # Подключение RabbitMQ через сеть Docker
     channel = connection.channel()
 
     # Создаем очередь
@@ -187,30 +183,3 @@ def send_to_rabbitmq(queue_name: str, message: dict):
         ))
 
     connection.close()
-
-
-# @app.post("/upload/google/single")
-# async def upload_to_google_drive(creds_hash: dict, file_path: str, folder_id: str = None):
-#     """
-#     (Нет потребности)
-#     Создаем экземпляр GoogleDriveService, и загружаем локальный файл
-#     :param creds_hash: хэш/словарь из get("/auth/google")
-#     :param file_path: путь к файлу формата 'folder/file.ext'
-#     :param folder_id: необязательный аргумент, ID директории в Google Drive, куда нужно поместить файл
-#     :return: ID файла на Google Drive
-#     """
-#     drive_service = GoogleDriveService(creds_hash=creds_hash)
-#     if any(c in "/" for c in file_path):
-#         file_name = file_path.split('/')[-1]
-#     else:
-#         file_name = file_path
-#     file_metadata = FileMetadataService.get_file_metadata(file_name=file_name, folder_id=folder_id)
-#     file_mimetype = FileMetadataService.get_mime_type(file_name=file_name)
-#     file_id = drive_service.upload_file(file_path=file_path, file_metadata=file_metadata, file_mimetype=file_mimetype)
-#     return {"file_id": file_id}
-#
-#
-# @app.get("/check") # Тестовый эндпоинт для проверки
-# def check(request: Request):
-#     session = SessionLocalArchiveRequest()
-#     return len(session.query(ArchiveRequest).all())

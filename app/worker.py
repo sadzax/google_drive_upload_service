@@ -1,9 +1,9 @@
 import pika
 import json
-from services.google_drive_service import GoogleDriveService
-from services.lite_gallery_stream_service import LiteGalleryStreamService
-from services.file_metadata_service import FileMetadataService
-from logging_config import logger
+from app.services.google_drive_service import GoogleDriveService
+from app.services.lite_gallery_stream_service import LiteGalleryStreamService
+from app.services.file_metadata_service import FileMetadataService
+from app.logging_config import logger
 
 
 def upload_to_google_drive_task(ch, method, properties, body):
@@ -39,8 +39,7 @@ def upload_to_google_drive_task(ch, method, properties, body):
 
 
 def start_worker():
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение RabbitMQ на локальной машине
-    # connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # Подключение RabbitMQ через сеть Docker
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # Подключение RabbitMQ через сеть Docker
     channel = connection.channel()
 
     # Подписываемся на очередь

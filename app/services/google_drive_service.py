@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
-from logging_config import logger
-from config import lite_gallery_links
+from app.logging_config import logger
+from app.config import lite_gallery_links
 
 
 class GoogleDriveService:

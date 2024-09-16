@@ -1,8 +1,8 @@
 import requests
 import json
 from urllib.parse import urlparse, urlencode, urlunparse
-from logging_config import logger
-from config import lite_gallery_links
+from app.logging_config import logger
+from app.config import lite_gallery_links
 
 
 class LiteGalleryStreamService:
