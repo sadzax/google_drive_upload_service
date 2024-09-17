@@ -41,7 +41,10 @@ class GoogleDriveService:
         :return: ID созданного файла (строка)
         """
         logger.info(f"Начало загрузки файла: {file_path} на Google Drive с MIME-типом {file_mimetype}, параметры: {file_metadata}")
-        media = self.media_tool(file_path=file_path, file_mimetype=file_mimetype) # TODO определиться с источником файла (если ссылка)
+        media = self.media_tool(
+            file_path=file_path,
+            file_mimetype=file_mimetype
+        ) # TODO определиться с источником файла (если ссылка)
 
         try:
             file = self.drive_service.files().create(
@@ -94,7 +97,10 @@ class GoogleDriveService:
             'parents': [parent_id] if parent_id else []
         }
 
-        folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
+        folder = self.drive_service.files().create(
+            body=file_metadata,
+            fields='id'
+        ).execute()
 
         logger.info(f"Создана директория: {folder_name} в Google Drive с номером {folder.get('id')}")
         if parent_id:

@@ -29,9 +29,17 @@ class LiteGalleryStreamService:
         """
         parsed_url = urlparse(url)
         query_params = {'json': ['true']}
-        new_query = urlencode(query_params, doseq=True)
+        new_query = urlencode(
+            query_params,
+            doseq=True)
         new_url = urlunparse(
-            (parsed_url.scheme, lite_gallery_links.PROD_NETLOC, parsed_url.path, parsed_url.params, new_query, parsed_url.fragment))
+            (parsed_url.scheme,
+             lite_gallery_links.PROD_NETLOC,
+             parsed_url.path,
+             parsed_url.params,
+             new_query,
+             parsed_url.fragment)
+        )
         return str(new_url)
 
 
@@ -47,7 +55,7 @@ class LiteGalleryStreamService:
             response = requests.get(url)
             json_string = response.text
             data = json.loads(json_string)
-            # TODO нужна логика сохранения данных в модель uploads
+            # TODO нужна логика сохранения данных в модель uploads?
             return data
         except Exception as e:
             logger.error(f"Ошибка при сериализации ссылки {url}, детали: {e}")
@@ -59,7 +67,7 @@ class LiteGalleryStreamService:
         """
         Формирует данные для загрузки по директориям в хэш/словарь
         :param data: [ ] массив с хэшами, в которых информация о файлах
-        :return: { }
+        :return: { } хэш/словарь
         """
         res_data = {}
         for rec in data:
